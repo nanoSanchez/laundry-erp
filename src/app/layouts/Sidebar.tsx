@@ -5,10 +5,13 @@ export default function Sidebar() {
     { name: "Dashboard", path: "/" },
     { name: "Clientes", path: "/clientes" },
     { name: "Recepción", path: "/ordenes" },
+    { name: "Órdenes", path: "/ordenes/listado" },
+    { name: "Prendas", path: "/prendas" },
     { name: "Pagos", path: "/pagos" },
     { name: "Caja", path: "/caja" },
     { name: "Reportes", path: "/reportes" },
-    { name: "Configuración", path: "/configuracion" },
+    { name: "Servicios", path: "/configuracion/servicios" },
+    { name: "Sucursales", path: "/configuracion/sucursales" },
   ];
 
   return (

@@ -1,1 +1,116 @@
 @import "tailwindcss";
+
+.order-receipt {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+  html,
+  body {
+    width: 80mm;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+  }
+  #root * {
+    visibility: hidden;
+  }
+  #root .order-receipt,
+  #root .order-receipt * {
+    visibility: visible;
+  }
+  #root .order-receipt {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    box-sizing: border-box;
+    width: 80mm;
+    padding: 4mm;
+    color: #000;
+    font-family: "Courier New", monospace;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .order-receipt__header,
+  .order-receipt__footer {
+    text-align: center;
+  }
+  .order-receipt__business-name {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .order-receipt__branch,
+  .order-receipt__header p:not(.order-receipt__business-name):not(.order-receipt__branch) {
+    margin: 2px 0 0;
+  }
+  .order-receipt__separator {
+    margin: 8px 0;
+    border-top: 1px dashed #000;
+  }
+  .order-receipt__details,
+  .order-receipt__totals {
+    margin: 0;
+  }
+  .order-receipt__details > div,
+  .order-receipt__totals > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .order-receipt__details dt,
+  .order-receipt__totals dt,
+  .order-receipt__details dd,
+  .order-receipt__totals dd {
+    margin: 0;
+  }
+  .order-receipt__details dd {
+    max-width: 60%;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+  .order-receipt__items {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .order-receipt__items th,
+  .order-receipt__items td {
+    padding: 2px 0;
+    text-align: right;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+  }
+  .order-receipt__items th:first-child,
+  .order-receipt__items td:first-child {
+    width: 40%;
+    text-align: left;
+  }
+  .order-receipt__items small {
+    display: block;
+    margin-top: 1px;
+    font-size: 9px;
+  }
+  .order-receipt__total,
+  .order-receipt__balance {
+    margin-top: 3px;
+    font-weight: 700;
+  }
+  .order-receipt__observations strong,
+  .order-receipt__observations p {
+    display: block;
+    margin: 0;
+  }
+  .order-receipt__observations p {
+    margin-top: 2px;
+    overflow-wrap: anywhere;
+  }
+  .order-receipt__footer {
+    margin-top: 12px;
+  }
+}
