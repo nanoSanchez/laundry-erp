@@ -8,7 +8,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
 
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (username: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -47,16 +47,18 @@ export function AuthProvider({ children }: Props) {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function signIn(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
+  async function signIn(username: string, password: string) {
+    const { data, error } = await supabase.functions.invoke("username-login", { body: { username, password } });
     if (error) throw error;
+    if (data?.error || !data?.session) throw new Error(data?.error ?? "No se pudo iniciar sesión.");
+    const { error: sessionError } = await supabase.auth.setSession({ access_token: data.session.access_token, refresh_token: data.session.refresh_token });
+    if (sessionError) throw sessionError;
   }
 
   async function signOut() {
+    if (user) {
+      sessionStorage.removeItem(`laundry-active-branch-${user.id}`);
+    }
     const { error } = await supabase.auth.signOut();
 
     if (error) throw error;

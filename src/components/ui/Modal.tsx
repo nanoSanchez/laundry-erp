@@ -5,16 +5,17 @@ interface Props {
   title: string;
   children: ReactNode;
   onClose: () => void;
+  size?: "default" | "wide";
 }
 
-export default function Modal({ open, title, children, onClose }: Props) {
+export default function Modal({ open, title, children, onClose, size = "default" }: Props) {
   if (!open) {
     return null;
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-xl bg-white shadow-xl">
+      <div className={`w-full ${size === "wide" ? "max-w-5xl" : "max-w-lg"} max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-xl`}>
         <div className="flex items-center justify-between border-b p-5">
           <h2 className="text-xl font-semibold">{title}</h2>
 

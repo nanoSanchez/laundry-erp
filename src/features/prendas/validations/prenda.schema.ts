@@ -7,6 +7,8 @@ export const prendaSchema = z.object({
 
   description: z.string().max(250, "Máximo 250 caracteres").optional(),
 
+  service_id: z.string().uuid("Seleccione un servicio"),
+
   price: z
     .number({
       error: "Ingrese un precio válido",

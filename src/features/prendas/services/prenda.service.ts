@@ -5,13 +5,19 @@ import type { CreatePrenda, Prenda, UpdatePrenda } from "../types/prenda";
 const TABLE = "garment_types";
 
 export async function getPrendas(): Promise<Prenda[]> {
-  const { data, error } = await supabase.from(TABLE).select("*").order("name");
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select("*, service:services(id, name, active)")
+    .order("name");
 
   if (error) {
     throw error;
   }
 
-  return data ?? [];
+  return (data ?? []).map((prenda) => ({
+    ...prenda,
+    service: Array.isArray(prenda.service) ? prenda.service[0] ?? null : prenda.service,
+  })) as Prenda[];
 }
 
 export async function createPrenda(prenda: CreatePrenda): Promise<void> {

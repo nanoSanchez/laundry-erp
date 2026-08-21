@@ -5,6 +5,7 @@ interface GarmentType {
   code: string;
   name: string;
   price: number;
+  service: { id: string; name: string } | null;
 }
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
   onAdd: (item: {
     garment_type_id: string;
     garment_name: string;
+    service_name: string;
     quantity: number;
     unit_price: number;
     subtotal: number;
@@ -44,6 +46,8 @@ export default function OrderItemForm({ garmentTypes, onAdd }: Props) {
 
       garment_name: selectedGarment.name,
 
+      service_name: selectedGarment.service?.name ?? "Servicio no asignado",
+
       quantity,
 
       unit_price: selectedGarment.price,
@@ -75,7 +79,7 @@ export default function OrderItemForm({ garmentTypes, onAdd }: Props) {
 
             {garmentTypes.map((garment) => (
               <option key={garment.id} value={garment.id}>
-                {garment.name} - Bs {garment.price.toFixed(2)}
+                {garment.name} · {garment.service?.name ?? "Sin servicio"} - Bs {garment.price.toFixed(2)}
               </option>
             ))}
           </select>

@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { useCreatePrenda, useUpdatePrenda } from "../hooks/usePrendaMutations";
+import { useServices } from "@/features/configuracion/servicios/hooks/useServices";
 
 import type { Prenda } from "../types/prenda";
 
@@ -17,6 +18,8 @@ interface Props {
 export default function PrendaForm({ prenda, onSuccess }: Props) {
   const createMutation = useCreatePrenda();
   const updateMutation = useUpdatePrenda();
+  const { data: services = [], isLoading: servicesLoading } = useServices();
+  const activeServices = services.filter((service) => service.active || service.id === prenda?.service_id);
 
   const editing = Boolean(prenda);
 
@@ -32,6 +35,7 @@ export default function PrendaForm({ prenda, onSuccess }: Props) {
       code: "",
       name: "",
       description: "",
+      service_id: "",
       price: 0,
     },
   });
@@ -42,6 +46,7 @@ export default function PrendaForm({ prenda, onSuccess }: Props) {
         code: prenda.code,
         name: prenda.name,
         description: prenda.description ?? "",
+        service_id: prenda.service_id ?? "",
         price: prenda.price,
       });
     } else {
@@ -49,6 +54,7 @@ export default function PrendaForm({ prenda, onSuccess }: Props) {
         code: "",
         name: "",
         description: "",
+        service_id: "",
         price: 0,
       });
     }
@@ -112,6 +118,26 @@ export default function PrendaForm({ prenda, onSuccess }: Props) {
 
         {errors.description && (
           <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
+        )}
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium">Servicio aplicable</label>
+
+        <select
+          {...register("service_id")}
+          disabled={servicesLoading}
+          className="w-full rounded-lg border p-3 disabled:bg-slate-100"
+        >
+          <option value="">{servicesLoading ? "Cargando servicios..." : "Seleccione un servicio"}</option>
+          {activeServices.map((service) => (
+            <option key={service.id} value={service.id}>{service.name}</option>
+          ))}
+        </select>
+
+        {errors.service_id && <p className="mt-1 text-sm text-red-600">{errors.service_id.message}</p>}
+        {!servicesLoading && activeServices.length === 0 && (
+          <p className="mt-1 text-sm text-amber-700">Primero registre y active al menos un servicio.</p>
         )}
       </div>
 

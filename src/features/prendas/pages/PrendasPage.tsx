@@ -110,6 +110,8 @@ export default function PrendasPage() {
 
                 <th className="px-4 py-3 text-left">Prenda</th>
 
+                <th className="px-4 py-3 text-left">Servicio</th>
+
                 <th className="px-4 py-3 text-right">Precio</th>
 
                 <th className="px-4 py-3 text-center">Estado</th>
@@ -121,7 +123,7 @@ export default function PrendasPage() {
             <tbody>
               {filteredPrendas.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
                     {search ? "No se encontraron prendas." : "No existen prendas registradas."}
                   </td>
                 </tr>
@@ -137,6 +139,8 @@ export default function PrendasPage() {
                         <p className="text-sm text-slate-500">{prenda.description}</p>
                       )}
                     </td>
+
+                    <td className="px-4 py-3">{prenda.service?.name ?? <span className="text-amber-700">Sin asignar</span>}</td>
 
                     <td className="px-4 py-3 text-right">Bs {prenda.price.toFixed(2)}</td>
 

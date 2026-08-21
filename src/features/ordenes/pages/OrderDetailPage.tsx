@@ -16,20 +16,26 @@ import OrderReceipt from "../components/OrderReceipt";
 import type { OrderItemStatus, OrderStatus } from "../services/order.service";
 
 import type { PaymentMethod } from "../services/payment.service";
+import { useBranch } from "@/hooks/useBranch";
+import { useCashReadiness } from "@/features/caja/hooks/useCashReadiness";
 
 function getStatusLabel(status: string) {
   switch (status) {
     case "received":
       return "Recibida";
 
-    case "pending":
-      return "Pendiente";
+    case "in_process":
+      return "En proceso";
 
     case "delivered":
       return "Entregada";
 
+    case "unclaimed":
+      return "No recogida";
+
     case "requires_cleaning":
       return "Requiere otra limpieza";
+
 
     default:
       return status;
@@ -41,14 +47,18 @@ function getStatusClass(status: string) {
     case "received":
       return "bg-blue-100 text-blue-700";
 
-    case "pending":
+    case "in_process":
       return "bg-yellow-100 text-yellow-700";
 
     case "delivered":
       return "bg-green-100 text-green-700";
 
+    case "unclaimed":
+      return "bg-slate-200 text-slate-700";
+
     case "requires_cleaning":
       return "bg-red-100 text-red-700";
+
 
     default:
       return "bg-slate-100 text-slate-700";
@@ -78,6 +88,8 @@ export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
 
   const navigate = useNavigate();
+  const { activeBranch, isGeneralAdmin } = useBranch();
+  const { data: cashReadiness } = useCashReadiness(activeBranch?.id);
 
   const { data: order, isLoading, error } = useOrder(id);
 
@@ -110,6 +122,7 @@ export default function OrderDetailPage() {
       return;
     }
 
+    if (quantity > 0 && !cashReadiness?.ready) { navigate("/caja", { state: { cashMessage: cashReadiness?.message ?? "Debe abrir la caja antes de entregar.", returnTo: `/ordenes/${id}` } }); return; }
     try {
       await updateDeliveredQuantityMutation.mutateAsync({
         itemId,
@@ -130,6 +143,7 @@ export default function OrderDetailPage() {
       return;
     }
 
+    if (status === "delivered" && !cashReadiness?.ready) { navigate("/caja", { state: { cashMessage: cashReadiness?.message ?? "Debe abrir la caja antes de entregar.", returnTo: `/ordenes/${id}` } }); return; }
     try {
       await updateItemStatusMutation.mutateAsync({
         itemId,
@@ -150,6 +164,7 @@ export default function OrderDetailPage() {
       return;
     }
 
+    if (status === "delivered" && !cashReadiness?.ready) { navigate("/caja", { state: { cashMessage: cashReadiness?.message ?? "Debe abrir la caja antes de entregar.", returnTo: `/ordenes/${id}` } }); return; }
     try {
       await updateOrderStatusMutation.mutateAsync({
         id: order.id,
@@ -158,7 +173,16 @@ export default function OrderDetailPage() {
     } catch (error) {
       console.error("Error al actualizar el estado de la orden:", error);
 
-      alert("No se pudo actualizar el estado de la orden.");
+      const detail = typeof error === "object" && error !== null
+        ? [
+            "message" in error && typeof error.message === "string" ? error.message : null,
+            "details" in error && typeof error.details === "string" ? error.details : null,
+            "hint" in error && typeof error.hint === "string" ? `Sugerencia: ${error.hint}` : null,
+            "code" in error && typeof error.code === "string" ? `Código: ${error.code}` : null,
+          ].filter(Boolean).join("\n")
+        : error instanceof Error ? error.message : "";
+
+      alert(detail || "No se pudo actualizar el estado de la orden.");
     }
   }
 
@@ -251,6 +275,7 @@ export default function OrderDetailPage() {
   const balance = Math.max(0, orderTotal - paidAmount);
 
   const isFullyPaid = balance <= 0.009;
+  const allItemsDelivered = order.items.every((item) => item.status === "delivered");
 
   return (
     <section className="space-y-6">
@@ -294,8 +319,19 @@ export default function OrderDetailPage() {
 
         {/* ESTADO */}
 
-        <div className="rounded-xl border bg-white p-6 shadow-sm">
+        <div className="relative rounded-xl border bg-white p-6 shadow-sm">
           <h2 className="mb-4 text-lg font-semibold">Estado de la orden</h2>
+
+          {isGeneralAdmin && (order.status === "received" || order.status === "in_process") && (
+            <button
+              type="button"
+              disabled={updateOrderStatusMutation.isPending}
+              onClick={() => { if (window.confirm("La orden saldrá de la bandeja operativa y quedará como no recogida en el historial. ¿Desea continuar?")) void changeOrderStatus("unclaimed"); }}
+              className="absolute right-6 top-6 rounded-lg border border-slate-400 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+            >
+              Marcar no recogida
+            </button>
+          )}
 
           <span
             className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${getStatusClass(
@@ -306,25 +342,25 @@ export default function OrderDetailPage() {
           </span>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            {/* RECIBIDA → PENDIENTE */}
+            {/* RECIBIDA → EN PROCESO */}
 
             {order.status === "received" && (
               <button
                 type="button"
                 disabled={updateOrderStatusMutation.isPending}
-                onClick={() => changeOrderStatus("pending")}
+                onClick={() => changeOrderStatus("in_process")}
                 className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                Pasar a pendiente
+                Pasar a proceso
               </button>
             )}
 
-            {/* PENDIENTE → ENTREGADA */}
+            {/* EN PROCESO → ENTREGADA: todas las prendas y pago completo */}
 
-            {order.status === "pending" && (
+            {order.status === "in_process" && (
               <button
                 type="button"
-                disabled={updateOrderStatusMutation.isPending}
+                disabled={updateOrderStatusMutation.isPending || !allItemsDelivered || !isFullyPaid}
                 onClick={() => changeOrderStatus("delivered")}
                 className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
               >
@@ -332,23 +368,25 @@ export default function OrderDetailPage() {
               </button>
             )}
 
-            {/* REQUIERE LIMPIEZA → PENDIENTE */}
+            {order.status === "in_process" && (!allItemsDelivered || !isFullyPaid) && <p className="w-full text-sm text-amber-700">Para entregar la orden, todas las prendas deben estar entregadas y el saldo debe ser Bs 0.00.</p>}
 
-            {order.status === "requires_cleaning" && (
-              <button
-                type="button"
-                disabled={updateOrderStatusMutation.isPending}
-                onClick={() => changeOrderStatus("pending")}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-              >
-                Volver a pendiente
-              </button>
-            )}
+            {/* REQUIERE LIMPIEZA → PENDIENTE */}
 
             {/* ENTREGADA */}
 
             {order.status === "delivered" && (
               <span className="text-sm text-slate-500">Orden finalizada.</span>
+            )}
+
+            {isGeneralAdmin && order.status === "unclaimed" && (
+              <button
+                type="button"
+                disabled={updateOrderStatusMutation.isPending}
+                onClick={() => { if (window.confirm("¿Reactivar esta orden para continuar el proceso?")) void changeOrderStatus("in_process"); }}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                Reactivar orden
+              </button>
             )}
           </div>
         </div>
@@ -563,7 +601,7 @@ export default function OrderDetailPage() {
 
                         {/* REQUIERE OTRA LIMPIEZA */}
 
-                        {item.status !== "requires_cleaning" && deliveredQuantity < quantity && (
+                        {item.status !== "requires_cleaning" && (
                           <button
                             type="button"
                             disabled={isBusy}
@@ -580,10 +618,10 @@ export default function OrderDetailPage() {
                           <button
                             type="button"
                             disabled={isBusy}
-                            onClick={() => changeItemStatus(item.id, "pending")}
+                            onClick={() => changeItemStatus(item.id, "delivered")}
                             className="mt-2 w-full rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
                           >
-                            Volver a pendiente
+                            Marcar entregada
                           </button>
                         )}
                       </td>
