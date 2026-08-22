@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useBranch } from "@/hooks/useBranch";
 
-export default function TopBar() {
+export default function TopBar({ onOpenMenu }: { onOpenMenu: () => void }) {
   const navigate = useNavigate();
 
   const { user, signOut } = useAuth();
@@ -22,15 +22,16 @@ export default function TopBar() {
   }
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-white px-6">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-800">Laundry ERP</h1>
-        <p className="text-sm text-slate-500 capitalize">{activeBranch?.name} · {today}</p>
+    <header className="flex min-h-16 items-center justify-between gap-3 border-b bg-white px-4 sm:px-6">
+      <div className="flex min-w-0 items-center gap-3">
+        <button type="button" onClick={onOpenMenu} className="rounded-lg p-2 text-xl text-slate-700 hover:bg-slate-100 lg:hidden" aria-label="Abrir menú">☰</button>
+        <div className="min-w-0"><h1 className="truncate text-lg font-semibold text-slate-800 sm:text-xl">Laundry ERP</h1>
+        <p className="truncate text-xs text-slate-500 capitalize sm:text-sm">{activeBranch?.name} <span className="hidden sm:inline">· {today}</span></p></div>
       </div>
 
-      <div className="flex items-center gap-6">
-        <button onClick={() => { clearBranch(); navigate("/seleccionar-sucursal", { replace: true }); }} className="text-sm font-medium text-blue-700 hover:underline">Cambiar sucursal</button>
-        <div className="text-right">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+        <button onClick={() => { clearBranch(); navigate("/seleccionar-sucursal", { replace: true }); }} className="text-xs font-medium text-blue-700 hover:underline sm:text-sm">Cambiar<span className="hidden sm:inline"> sucursal</span></button>
+        <div className="hidden text-right md:block">
           <p className="font-medium">{user?.email}</p>
 
           <p className="text-sm text-slate-500">Administrador</p>
@@ -38,7 +39,7 @@ export default function TopBar() {
 
         <button
           onClick={handleLogout}
-          className="rounded-lg bg-red-600 px-4 py-2 text-white transition hover:bg-red-700"
+          className="rounded-lg bg-red-600 px-3 py-2 text-sm text-white transition hover:bg-red-700 sm:px-4"
         >
           Salir
         </button>

@@ -32,8 +32,8 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
-      <section className="w-full max-w-md rounded-xl bg-white p-8 shadow-lg">
-        <h1 className="mb-2 text-center text-3xl font-bold">Laundry ERP</h1>
+      <section className="w-full max-w-md rounded-xl bg-white p-5 shadow-lg sm:p-8">
+        <h1 className="mb-2 text-center text-2xl font-bold sm:text-3xl">Laundry ERP</h1>
 
         {!user ? <>
         <p className="mb-8 text-center text-slate-500">Iniciar sesión</p>

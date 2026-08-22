@@ -14,10 +14,10 @@ export default function Modal({ open, title, children, onClose, size = "default"
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className={`w-full ${size === "wide" ? "max-w-5xl" : "max-w-lg"} max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-xl`}>
-        <div className="flex items-center justify-between border-b p-5">
-          <h2 className="text-xl font-semibold">{title}</h2>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
+      <div className={`w-full ${size === "wide" ? "max-w-5xl" : "max-w-lg"} max-h-[92dvh] overflow-y-auto rounded-t-xl bg-white shadow-xl sm:max-h-[90vh] sm:rounded-xl`}>
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white p-4 sm:p-5">
+          <h2 className="text-lg font-semibold sm:text-xl">{title}</h2>
 
           <button
             type="button"
@@ -29,7 +29,7 @@ export default function Modal({ open, title, children, onClose, size = "default"
           </button>
         </div>
 
-        <div className="p-5">{children}</div>
+        <div className="p-4 sm:p-5">{children}</div>
       </div>
     </div>
   );
