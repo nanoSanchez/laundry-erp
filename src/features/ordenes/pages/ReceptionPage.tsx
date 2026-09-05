@@ -301,6 +301,14 @@ export default function ReceptionPage() {
                   </tr>
                 ))}
               </tbody>
+
+              <tfoot className="border-t-2 bg-slate-50">
+                <tr>
+                  <td colSpan={4} className="px-4 py-4 text-right font-semibold">Total de prendas</td>
+                  <td className="px-4 py-4 text-right text-lg font-bold">Bs {total.toFixed(2)}</td>
+                  <td />
+                </tr>
+              </tfoot>
             </table>
           </div>
         )}
