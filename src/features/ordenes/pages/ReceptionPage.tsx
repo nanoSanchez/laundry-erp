@@ -42,6 +42,7 @@ export default function ReceptionPage() {
   const [items, setItems] = useState<OrderItem[]>([]);
 
   const [deliveryDate, setDeliveryDate] = useState("");
+  const [deliveryTime, setDeliveryTime] = useState("");
 
   const [observations, setObservations] = useState("");
 
@@ -112,8 +113,8 @@ export default function ReceptionPage() {
       return;
     }
 
-    if (!deliveryDate) {
-      alert("Debe registrar la fecha estimada de entrega.");
+    if (!deliveryDate || !deliveryTime) {
+      alert("Debe registrar la fecha y hora estimadas de entrega.");
       return;
     }
 
@@ -135,9 +136,7 @@ export default function ReceptionPage() {
 
         order_number: generateOrderNumber(),
 
-        estimated_delivery_at: deliveryDate
-          ? new Date(`${deliveryDate}T18:00:00`).toISOString()
-          : null,
+        estimated_delivery_at: new Date(`${deliveryDate}T${deliveryTime}`).toISOString(),
 
         observations,
 
@@ -168,6 +167,7 @@ export default function ReceptionPage() {
       setCliente(null);
       setItems([]);
       setDeliveryDate("");
+      setDeliveryTime("");
       setObservations("");
       setInitialPayments([]);
       setReceiptPaidAmount(initialPaymentTotal);
@@ -311,7 +311,7 @@ export default function ReceptionPage() {
       <div className="rounded-xl border bg-white p-6 shadow-sm">
         <h2 className="mb-4 text-lg font-semibold">3. Entrega</h2>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-3">
           <div>
             <label className="mb-1 block text-sm font-medium">Fecha estimada de entrega</label>
 
@@ -319,6 +319,18 @@ export default function ReceptionPage() {
               type="date"
               value={deliveryDate}
               onChange={(event) => setDeliveryDate(event.target.value)}
+              className="w-full rounded-lg border p-3"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">Hora estimada de entrega</label>
+
+            <input
+              type="time"
+              value={deliveryTime}
+              onChange={(event) => setDeliveryTime(event.target.value)}
               className="w-full rounded-lg border p-3"
               required
             />
