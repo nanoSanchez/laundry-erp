@@ -250,8 +250,9 @@ export default function ReceptionPage() {
         {items.length === 0 ? (
           <div className="p-8 text-center text-slate-500">No se han agregado prendas.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
+          <div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
               <thead className="bg-slate-100">
                 <tr>
                   <th className="px-4 py-3 text-left">Prenda</th>
@@ -302,14 +303,12 @@ export default function ReceptionPage() {
                 ))}
               </tbody>
 
-              <tfoot className="border-t-2 bg-slate-50">
-                <tr>
-                  <td colSpan={4} className="px-4 py-4 text-right font-semibold">Total de prendas</td>
-                  <td className="px-4 py-4 text-right text-lg font-bold">Bs {total.toFixed(2)}</td>
-                  <td />
-                </tr>
-              </tfoot>
-            </table>
+              </table>
+            </div>
+            <div className="flex items-center justify-between border-t-2 bg-blue-50 px-4 py-4 text-blue-950">
+              <span className="font-semibold">Total de prendas agregadas</span>
+              <span className="text-xl font-bold">Bs {total.toFixed(2)}</span>
+            </div>
           </div>
         )}
       </div>

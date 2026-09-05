@@ -119,7 +119,7 @@ export default function OrderItemForm({ garmentTypes, onAdd }: Props) {
       </div>
 
       <div className="mt-4">
-        <label className="mb-1 block text-sm font-medium">Observación de la prenda</label>
+        <label className="mb-1 block text-sm font-medium">Detalle de la prenda</label>
 
         <input
           type="text"
