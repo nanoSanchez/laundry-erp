@@ -4,6 +4,75 @@
   display: none;
 }
 
+.receipt-preview .order-receipt {
+  display: block;
+  margin: 0 auto;
+  max-width: 520px;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.receipt-preview .order-receipt__header,
+.receipt-preview .order-receipt__footer {
+  text-align: center;
+}
+
+.receipt-preview .order-receipt__business-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.receipt-preview .order-receipt__separator {
+  margin: 14px 0;
+  border-top: 1px dashed #94a3b8;
+}
+
+.receipt-preview .order-receipt__details > div,
+.receipt-preview .order-receipt__totals > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.receipt-preview .order-receipt dt,
+.receipt-preview .order-receipt dd {
+  margin: 0;
+}
+
+.receipt-preview .order-receipt__items {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.receipt-preview .order-receipt__items th,
+.receipt-preview .order-receipt__items td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 4px;
+  text-align: right;
+}
+
+.receipt-preview .order-receipt__items th:first-child,
+.receipt-preview .order-receipt__items td:first-child {
+  text-align: left;
+}
+
+.receipt-preview .order-receipt__items small {
+  display: block;
+  margin-top: 2px;
+  color: #64748b;
+}
+
+.receipt-preview .order-receipt__total,
+.receipt-preview .order-receipt__balance {
+  margin-top: 4px;
+  font-weight: 700;
+}
+
+.receipt-preview .order-receipt__observations p {
+  margin: 4px 0 0;
+}
+
 @media print {
   @page {
     size: 80mm auto;

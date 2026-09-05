@@ -2,14 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import ClienteSearch from "@/features/clientes/components/ClienteSearch";
+import Modal from "@/components/ui/Modal";
 import type { Cliente } from "@/features/clientes/types/cliente";
 import { useGarmentTypes } from "@/features/prendas/hooks/useGarmentTypes";
 import { useBranch } from "@/hooks/useBranch";
 import { useCashReadiness } from "@/features/caja/hooks/useCashReadiness";
 
 import OrderItemForm from "../components/OrderItemForm";
+import OrderReceipt from "../components/OrderReceipt";
 import { useCreateOrder } from "../hooks/useOrderMutations";
 import { useCreatePayment } from "../hooks/usePaymentMutations";
+import { useOrder } from "../hooks/useOrder";
 import type { PaymentMethod } from "../services/payment.service";
 import { generateOrderNumber } from "../utils/orderNumber";
 
@@ -43,9 +46,12 @@ export default function ReceptionPage() {
   const [observations, setObservations] = useState("");
 
   const [initialPayments, setInitialPayments] = useState<InitialPayment[]>([]);
+  const [receiptOrderId, setReceiptOrderId] = useState<string | null>(null);
+  const [receiptPaidAmount, setReceiptPaidAmount] = useState(0);
 
   const createOrderMutation = useCreateOrder();
   const createPaymentMutation = useCreatePayment();
+  const { data: receiptOrder, isLoading: isLoadingReceipt } = useOrder(receiptOrderId ?? undefined);
 
   const {
     data: garmentTypes = [],
@@ -159,13 +165,13 @@ export default function ReceptionPage() {
         });
       }
 
-      alert(paymentsToCreate.length > 0 ? "Orden y pagos iniciales registrados correctamente." : "Orden registrada correctamente.");
-
       setCliente(null);
       setItems([]);
       setDeliveryDate("");
       setObservations("");
       setInitialPayments([]);
+      setReceiptPaidAmount(initialPaymentTotal);
+      setReceiptOrderId(order.id);
     } catch (error) {
       console.error("Error al registrar la orden:", error);
 
@@ -391,6 +397,22 @@ export default function ReceptionPage() {
           </button>
         </div>
       </div>
+
+      <Modal open={Boolean(receiptOrderId)} title="Vista previa del comprobante" onClose={() => setReceiptOrderId(null)} size="wide">
+        {isLoadingReceipt || !receiptOrder ? (
+          <p className="p-6 text-center text-slate-500">Preparando comprobante...</p>
+        ) : (
+          <div className="space-y-5">
+            <div className="receipt-preview rounded-lg border bg-slate-50 p-4 sm:p-6">
+              <OrderReceipt order={receiptOrder} paidAmount={receiptPaidAmount} />
+            </div>
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => setReceiptOrderId(null)} className="rounded-lg border px-5 py-3 font-medium hover:bg-slate-50">Cerrar</button>
+              <button type="button" onClick={() => window.print()} className="rounded-lg bg-slate-800 px-5 py-3 font-medium text-white hover:bg-slate-900">Imprimir comprobante</button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </section>
   );
 }
