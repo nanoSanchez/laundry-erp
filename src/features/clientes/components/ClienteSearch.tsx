@@ -1,25 +1,37 @@
 import { useEffect, useState, type KeyboardEvent } from "react";
 
 import { useClienteByPhone } from "../hooks/useClienteByPhone";
+import { useCreateCliente } from "../hooks/useClienteMutations";
 
 import type { Cliente } from "../types/cliente";
 
 interface Props {
   onSelect: (cliente: Cliente) => void;
-  onCreateNew?: (phone: string) => void;
 }
 
-export default function ClienteSearch({ onSelect, onCreateNew }: Props) {
+export default function ClienteSearch({ onSelect }: Props) {
   const [phone, setPhone] = useState("");
   const [searchPhone, setSearchPhone] = useState("");
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientObservations, setNewClientObservations] = useState("");
+  const [createError, setCreateError] = useState("");
 
   const { data: cliente, isLoading, error } = useClienteByPhone(searchPhone);
+  const createClienteMutation = useCreateCliente();
+  const searched = searchPhone.length >= 5;
 
   useEffect(() => {
     if (cliente) {
       onSelect(cliente);
     }
   }, [cliente, onSelect]);
+
+  useEffect(() => {
+    if (searched && !isLoading && !error && !cliente) {
+      setShowCreateForm(true);
+    }
+  }, [searched, isLoading, error, cliente]);
 
   function handleSearch() {
     const normalizedPhone = phone.trim();
@@ -28,7 +40,31 @@ export default function ClienteSearch({ onSelect, onCreateNew }: Props) {
       return;
     }
 
+    setShowCreateForm(false);
+    setCreateError("");
     setSearchPhone(normalizedPhone);
+  }
+
+  async function handleCreateClient(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const name = newClientName.trim();
+    const observations = newClientObservations.trim();
+    if (name.length < 2 || !observations) {
+      setCreateError("Ingrese el nombre y una observación del cliente.");
+      return;
+    }
+
+    try {
+      const created = await createClienteMutation.mutateAsync({ phone: searchPhone, name, observations });
+      onSelect(created);
+      setShowCreateForm(false);
+      setCreateError("");
+      setNewClientName("");
+      setNewClientObservations("");
+    } catch (creationError) {
+      console.error("No se pudo crear el cliente:", creationError);
+      setCreateError("No se pudo crear el cliente. Verifique que el celular no esté registrado.");
+    }
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -37,8 +73,6 @@ export default function ClienteSearch({ onSelect, onCreateNew }: Props) {
       handleSearch();
     }
   }
-
-  const searched = searchPhone.length >= 5;
 
   return (
     <div className="space-y-4">
@@ -52,7 +86,7 @@ export default function ClienteSearch({ onSelect, onCreateNew }: Props) {
             id="cliente-phone-search"
             type="text"
             value={phone}
-            onChange={(event) => setPhone(event.target.value)}
+            onChange={(event) => { setPhone(event.target.value); setShowCreateForm(false); }}
             onKeyDown={handleKeyDown}
             placeholder="Ej. 71567287"
             className="flex-1 rounded-lg border p-3 outline-none focus:border-blue-500"
@@ -81,16 +115,34 @@ export default function ClienteSearch({ onSelect, onCreateNew }: Props) {
             No existe un cliente registrado con este número de celular.
           </p>
 
-          {onCreateNew && (
-            <button
-              type="button"
-              onClick={() => onCreateNew(searchPhone)}
-              className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              Crear nuevo cliente
-            </button>
-          )}
+          <p className="mt-1 text-sm text-yellow-700">Complete los siguientes datos para registrarlo y continuar con la orden.</p>
         </div>
+      )}
+
+      {searched && !isLoading && !error && !cliente && showCreateForm && (
+        <form onSubmit={handleCreateClient} className="space-y-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <div>
+            <p className="font-medium text-blue-900">Registrar nuevo cliente</p>
+            <p className="text-sm text-blue-700">Celular: {searchPhone}</p>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">Nombre completo</label>
+            <input value={newClientName} onChange={(event) => setNewClientName(event.target.value)} required minLength={2} autoFocus className="w-full rounded-lg border bg-white p-3" placeholder="Nombre del cliente" />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">Observación</label>
+            <textarea value={newClientObservations} onChange={(event) => setNewClientObservations(event.target.value)} required rows={2} className="w-full rounded-lg border bg-white p-3" placeholder="Ej. Cliente nuevo, preferencias o referencia" />
+          </div>
+
+          {createError && <p className="text-sm text-red-700">{createError}</p>}
+
+          <div className="flex flex-wrap gap-2">
+            <button type="submit" disabled={createClienteMutation.isPending} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">{createClienteMutation.isPending ? "Guardando..." : "Crear y seleccionar cliente"}</button>
+            <button type="button" onClick={() => setShowCreateForm(false)} className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-white">Cancelar</button>
+          </div>
+        </form>
       )}
 
       {cliente && (

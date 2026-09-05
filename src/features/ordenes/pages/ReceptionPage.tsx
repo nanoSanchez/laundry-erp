@@ -195,9 +195,6 @@ export default function ReceptionPage() {
 
         <ClienteSearch
           onSelect={setCliente}
-          onCreateNew={(phone) => {
-            alert(`Crear cliente con celular: ${phone}`);
-          }}
         />
 
         {cliente && (

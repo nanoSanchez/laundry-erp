@@ -34,12 +34,14 @@ export async function getClienteByPhone(phone: string): Promise<Cliente | null> 
   return data;
 }
 
-export async function createCliente(cliente: CreateCliente): Promise<void> {
-  const { error } = await supabase.from(TABLE).insert(cliente);
+export async function createCliente(cliente: CreateCliente): Promise<Cliente> {
+  const { data, error } = await supabase.from(TABLE).insert(cliente).select().single();
 
   if (error) {
     throw error;
   }
+
+  return data;
 }
 
 export async function updateCliente(id: string, cliente: UpdateCliente): Promise<void> {
