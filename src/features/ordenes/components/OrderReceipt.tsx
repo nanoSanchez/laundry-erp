@@ -18,10 +18,6 @@ function formatDateTime(value: string) {
   });
 }
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("es-BO");
-}
-
 export default function OrderReceipt({ order, paidAmount }: OrderReceiptProps) {
   const balance = Math.max(0, order.total - paidAmount);
 
@@ -56,7 +52,7 @@ export default function OrderReceipt({ order, paidAmount }: OrderReceiptProps) {
         </div>
         <div>
           <dt>Entrega estimada</dt>
-          <dd>{order.estimated_delivery_at ? formatDate(order.estimated_delivery_at) : "-"}</dd>
+          <dd>{order.estimated_delivery_at ? formatDateTime(order.estimated_delivery_at) : "-"}</dd>
         </div>
       </dl>
 

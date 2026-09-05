@@ -49,8 +49,8 @@ export default function ClienteSearch({ onSelect }: Props) {
     event.preventDefault();
     const name = newClientName.trim();
     const observations = newClientObservations.trim();
-    if (name.length < 2 || !observations) {
-      setCreateError("Ingrese el nombre y una observación del cliente.");
+    if (name.length < 2) {
+      setCreateError("Ingrese el nombre del cliente.");
       return;
     }
 
@@ -132,8 +132,8 @@ export default function ClienteSearch({ onSelect }: Props) {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">Observación</label>
-            <textarea value={newClientObservations} onChange={(event) => setNewClientObservations(event.target.value)} required rows={2} className="w-full rounded-lg border bg-white p-3" placeholder="Ej. Cliente nuevo, preferencias o referencia" />
+            <label className="mb-1 block text-sm font-medium">Observación <span className="font-normal text-slate-400">(opcional)</span></label>
+            <textarea value={newClientObservations} onChange={(event) => setNewClientObservations(event.target.value)} rows={2} className="w-full rounded-lg border bg-white p-3" placeholder="Ej. Cliente nuevo, preferencias o referencia" />
           </div>
 
           {createError && <p className="text-sm text-red-700">{createError}</p>}

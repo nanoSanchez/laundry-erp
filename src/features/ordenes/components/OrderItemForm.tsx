@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface GarmentType {
   id: string;
@@ -25,19 +25,24 @@ export default function OrderItemForm({ garmentTypes, onAdd }: Props) {
   const [garmentTypeId, setGarmentTypeId] = useState("");
 
   const [quantity, setQuantity] = useState(1);
+  const [itemSubtotal, setItemSubtotal] = useState("");
 
   const [observations, setObservations] = useState("");
 
   const selectedGarment = garmentTypes.find((garment) => garment.id === garmentTypeId);
 
-  const subtotal = selectedGarment ? selectedGarment.price * quantity : 0;
+  const subtotal = Number(itemSubtotal) || 0;
+
+  useEffect(() => {
+    setItemSubtotal(selectedGarment ? (selectedGarment.price * quantity).toFixed(2) : "");
+  }, [garmentTypeId, quantity, selectedGarment?.price]);
 
   function handleAdd() {
     if (!selectedGarment) {
       return;
     }
 
-    if (quantity <= 0) {
+    if (quantity <= 0 || subtotal <= 0) {
       return;
     }
 
@@ -50,7 +55,7 @@ export default function OrderItemForm({ garmentTypes, onAdd }: Props) {
 
       quantity,
 
-      unit_price: selectedGarment.price,
+      unit_price: subtotal / quantity,
 
       subtotal,
 
@@ -59,6 +64,7 @@ export default function OrderItemForm({ garmentTypes, onAdd }: Props) {
 
     setGarmentTypeId("");
     setQuantity(1);
+    setItemSubtotal("");
     setObservations("");
   }
 
@@ -98,9 +104,17 @@ export default function OrderItemForm({ garmentTypes, onAdd }: Props) {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Subtotal</label>
+          <label className="mb-1 block text-sm font-medium">Total parcial</label>
 
-          <div className="rounded-lg bg-slate-100 p-3">Bs {subtotal.toFixed(2)}</div>
+          <input
+            type="number"
+            min="0.01"
+            step="0.01"
+            value={itemSubtotal}
+            onChange={(event) => setItemSubtotal(event.target.value)}
+            className="w-full rounded-lg border p-3"
+          />
+          {selectedGarment && <p className="mt-1 text-xs text-slate-500">Precio referencial: Bs {selectedGarment.price.toFixed(2)} por unidad</p>}
         </div>
       </div>
 
