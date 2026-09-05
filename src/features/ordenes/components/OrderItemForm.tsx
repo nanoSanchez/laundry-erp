@@ -30,6 +30,7 @@ export default function OrderItemForm({ garmentTypes, onAdd }: Props) {
   const [observations, setObservations] = useState("");
 
   const selectedGarment = garmentTypes.find((garment) => garment.id === garmentTypeId);
+  const sortedGarmentTypes = [...garmentTypes].sort((first, second) => first.name.localeCompare(second.name, "es"));
 
   const subtotal = Number(itemSubtotal) || 0;
 
@@ -83,7 +84,7 @@ export default function OrderItemForm({ garmentTypes, onAdd }: Props) {
           >
             <option value="">Seleccione una prenda</option>
 
-            {garmentTypes.map((garment) => (
+            {sortedGarmentTypes.map((garment) => (
               <option key={garment.id} value={garment.id}>
                 {garment.name} · {garment.service?.name ?? "Sin servicio"} - Bs {garment.price.toFixed(2)}
               </option>

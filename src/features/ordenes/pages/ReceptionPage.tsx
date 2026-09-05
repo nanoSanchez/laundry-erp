@@ -60,9 +60,18 @@ export default function ReceptionPage() {
     error: garmentTypesError,
   } = useGarmentTypes();
 
-  const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.subtotal, 0), [items]);
+  const total = useMemo(() => {
+    const totalInCents = items.reduce((sum, item) => {
+      const quantity = Number(item.quantity);
+      const unitPrice = Number(item.unit_price);
+      const lineTotal = Number.isFinite(quantity) && Number.isFinite(unitPrice) ? quantity * unitPrice : 0;
+      return sum + Math.round(lineTotal * 100);
+    }, 0);
 
-  const total = subtotal;
+    return totalInCents / 100;
+  }, [items]);
+
+  const subtotal = total;
   const initialPaymentTotal = initialPayments.reduce((sum, payment) => {
     const amount = Number(payment.amount);
     return Number.isFinite(amount) && amount > 0 ? sum + amount : sum;
