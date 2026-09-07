@@ -12,6 +12,7 @@ import {
 import { useOrderPayments } from "../hooks/useOrderPayments";
 import { useCreatePayment } from "../hooks/usePaymentMutations";
 import OrderReceipt from "../components/OrderReceipt";
+import OrderEditModal from "../components/OrderEditModal";
 
 import type { OrderItemStatus, OrderStatus } from "../services/order.service";
 
@@ -113,6 +114,7 @@ export default function OrderDetailPage() {
   const [paymentReference, setPaymentReference] = React.useState("");
 
   const [paymentNotes, setPaymentNotes] = React.useState("");
+  const [isEditOpen, setIsEditOpen] = React.useState(false);
 
   /**
    * Cambiar cantidad entregada de una prenda.
@@ -288,13 +290,24 @@ export default function OrderDetailPage() {
           <h1 className="text-3xl font-bold">{order.order_number}</h1>
         </div>
 
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900"
-        >
-          Imprimir comprobante
-        </button>
+        <div className="flex flex-wrap gap-2">
+          {order.status === "received" && (
+            <button
+              type="button"
+              onClick={() => setIsEditOpen(true)}
+              className="rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50"
+            >
+              Editar orden
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900"
+          >
+            Imprimir comprobante
+          </button>
+        </div>
 
         <Link
           to="/ordenes/listado"
@@ -873,6 +886,7 @@ export default function OrderDetailPage() {
       </div>
 
       <OrderReceipt order={order} paidAmount={paidAmount} />
+      <OrderEditModal open={isEditOpen} order={order} onClose={() => setIsEditOpen(false)} />
     </section>
   );
 }

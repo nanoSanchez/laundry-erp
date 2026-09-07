@@ -4,6 +4,7 @@ export type OrderStatus = "received" | "in_process" | "delivered" | "unclaimed";
 export type OrderItemStatus = "received" | "delivered" | "requires_cleaning";
 export interface CreateOrderItem { garment_type_id: string; quantity: number; unit_price: number; subtotal: number; observations?: string; }
 export interface CreateOrder { branch_id: string; client_id: string; order_number: string; estimated_delivery_at?: string | null; observations?: string | null; subtotal: number; discount: number; total: number; items: CreateOrderItem[]; }
+export interface EditReceivedOrder { order_id: string; client_id: string; estimated_delivery_at: string; observations?: string | null; discount: number; items: CreateOrderItem[]; }
 
 export async function createOrder(order: CreateOrder) {
   const { items, ...header } = order;
@@ -16,6 +17,20 @@ export async function createOrder(order: CreateOrder) {
 
 export async function updateOrderStatus(id: string, status: OrderStatus) {
   const { data, error } = await supabase.from("orders").update({ status }).eq("id", id).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function editReceivedOrder(order: EditReceivedOrder) {
+  const { order_id, client_id, estimated_delivery_at, observations, discount, items } = order;
+  const { data, error } = await supabase.rpc("edit_received_order", {
+    p_order_id: order_id,
+    p_client_id: client_id,
+    p_estimated_delivery_at: estimated_delivery_at,
+    p_observations: observations?.trim() || null,
+    p_discount: discount,
+    p_items: items,
+  });
   if (error) throw error;
   return data;
 }

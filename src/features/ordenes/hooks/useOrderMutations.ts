@@ -5,7 +5,9 @@ import {
   updateOrderStatus,
   updateOrderItemStatus,
   updateOrderItemDeliveredQuantity,
+  editReceivedOrder,
   type CreateOrder,
+  type EditReceivedOrder,
   type OrderStatus,
   type OrderItemStatus,
 } from "../services/order.service";
@@ -20,6 +22,17 @@ export function useCreateOrder() {
       queryClient.invalidateQueries({
         queryKey: ["orders"],
       });
+    },
+  });
+}
+
+export function useEditReceivedOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (order: EditReceivedOrder) => editReceivedOrder(order),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["order", variables.order_id] });
     },
   });
 }
