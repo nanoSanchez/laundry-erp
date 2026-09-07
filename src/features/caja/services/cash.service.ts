@@ -20,6 +20,11 @@ export async function closeCashSession(id: string, closingCashAmount: number, no
   if (error) throw error;
   return toSession(data);
 }
+export async function reopenCashSession(id: string, reason: string) {
+  const { data, error } = await supabase.rpc("reopen_cash_session", { p_session_id: id, p_reason: reason.trim() });
+  if (error) throw error;
+  return toSession(data);
+}
 export async function getSessionMovements(id: string) {
   const { data, error } = await supabase.from("cash_movements").select("*").eq("cash_session_id", id).order("created_at", { ascending: false });
   if (error) throw error;

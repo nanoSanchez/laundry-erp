@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Card from "@/components/ui/Card";
 import PageHeader from "@/components/ui/PageHeader";
 import { useBranch } from "@/hooks/useBranch";
-import { closeCashSession, getCashSessions, getSessionMovements, getSessionOrderPayments, openCashSession, type CashMovement, type PaymentMethod } from "../services/cash.service";
+import { closeCashSession, getCashSessions, getSessionMovements, getSessionOrderPayments, openCashSession, reopenCashSession, type CashMovement, type PaymentMethod } from "../services/cash.service";
 
 const money = (value: number) => `Bs ${value.toFixed(2)}`;
 const labels: Record<PaymentMethod, string> = { cash: "Efectivo", qr: "QR", transfer: "Transferencia", card: "Tarjeta", other: "Otro" };
@@ -13,14 +13,16 @@ type DetailRow = { label: string; date: string; amount: number };
 export default function CashPage() {
   const { activeBranch } = useBranch(); const branchId = activeBranch?.id ?? "";
   const location = useLocation(); const navigate = useNavigate(); const state = location.state as { cashMessage?: string; returnTo?: string } | null;
-  const [opening, setOpening] = useState(""); const [closing, setClosing] = useState(""); const [message, setMessage] = useState<string | null>(state?.cashMessage ?? null);
+  const [opening, setOpening] = useState(""); const [closing, setClosing] = useState(""); const [reopeningReason, setReopeningReason] = useState(""); const [message, setMessage] = useState<string | null>(state?.cashMessage ?? null);
   const queryClient = useQueryClient();
   const sessions = useQuery({ queryKey: ["cash-sessions", branchId], queryFn: () => getCashSessions(branchId), enabled: Boolean(branchId) });
   const active = sessions.data?.find((session) => session.status === "open");
+  const now = new Date(); const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const closedToday = sessions.data?.find((session) => session.business_date === today && session.status === "closed");
   const payments = useQuery({ queryKey: ["cash-order-payments", active?.id], queryFn: () => getSessionOrderPayments(active!.id), enabled: Boolean(active) });
   const movements = useQuery({ queryKey: ["cash-movements", active?.id], queryFn: () => getSessionMovements(active!.id), enabled: Boolean(active) });
   useEffect(() => { if (state?.cashMessage) setMessage(state.cashMessage); }, [state?.cashMessage]);
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ["cash-sessions", branchId] });
+  const refresh = () => { queryClient.invalidateQueries({ queryKey: ["cash-sessions", branchId] }); queryClient.invalidateQueries({ queryKey: ["cash-readiness", branchId] }); };
   const extraIncome = (movements.data ?? []).filter((item) => item.movement_type === "income");
   const expenses = (movements.data ?? []).filter((item) => item.movement_type === "expense");
   const orderIncome = (payments.data ?? []).reduce((sum, item) => sum + item.amount, 0);
@@ -37,10 +39,12 @@ export default function CashPage() {
   useEffect(() => { if (active && closing === "") setClosing(Math.max(0, cashBalance).toFixed(2)); }, [active, cashBalance, closing]);
   async function open() { try { await openCashSession(branchId, Number(opening)); setOpening(""); setMessage("Caja abierta."); refresh(); } catch (error) { setMessage(error instanceof Error ? error.message : "No se pudo abrir la caja."); } }
   async function close() { if (!active) return; try { await closeCashSession(active.id, Number(closing)); setClosing(""); setMessage("Cierre registrado."); refresh(); } catch (error) { setMessage(error instanceof Error ? error.message : "No se pudo cerrar la caja."); } }
+  async function reopen() { if (!closedToday || !reopeningReason.trim()) return; if (!window.confirm("¿Desea reabrir la caja de hoy? El cierre anterior quedará registrado en la bitácora.")) return; try { await reopenCashSession(closedToday.id, reopeningReason); setReopeningReason(""); setClosing(""); setMessage("Caja del día reabierta. Registre nuevamente el cierre cuando corresponda."); refresh(); } catch (error) { setMessage(error instanceof Error ? error.message : "No se pudo reabrir la caja."); } }
   const paymentRows: DetailRow[] = (payments.data ?? []).map((item) => ({ label: `${item.order_number} · ${labels[item.payment_method]}`, date: item.created_at, amount: item.amount }));
   return <section className="space-y-6"><PageHeader title="Caja" subtitle={`Apertura, cierre y detalle diario · ${activeBranch?.name ?? ""}.`} />
     {message && <div className="rounded-lg bg-blue-50 p-4 text-blue-800"><p>{message}</p>{state?.returnTo && <button onClick={() => navigate(state.returnTo!)} className="mt-2 text-sm font-medium underline">Volver a órdenes</button>}</div>}
-    {!active && branchId && <Card><h2 className="mb-3 text-lg font-semibold">Abrir caja</h2><div className="flex flex-wrap gap-3"><input type="number" min="0" step="0.01" value={opening} onChange={(event) => setOpening(event.target.value)} placeholder="Monto inicial en efectivo" className="rounded-lg border p-3"/><button onClick={open} disabled={opening === ""} className="rounded-lg bg-blue-600 px-5 py-2 text-white disabled:opacity-50">Abrir caja</button></div></Card>}
+    {!active && !closedToday && branchId && <Card><h2 className="mb-3 text-lg font-semibold">Abrir caja</h2><div className="flex flex-wrap gap-3"><input type="number" min="0" step="0.01" value={opening} onChange={(event) => setOpening(event.target.value)} placeholder="Monto inicial en efectivo" className="rounded-lg border p-3"/><button onClick={open} disabled={opening === ""} className="rounded-lg bg-blue-600 px-5 py-2 text-white disabled:opacity-50">Abrir caja</button></div></Card>}
+    {!active && closedToday && <Card className="border-amber-200 bg-amber-50"><h2 className="mb-1 text-lg font-semibold text-amber-950">Caja de hoy cerrada</h2><p className="mb-4 text-sm text-amber-900">Puede reabrirla si necesita corregir o registrar un movimiento adicional. El cierre anterior quedará en la bitácora.</p><div className="flex flex-wrap gap-3"><input value={reopeningReason} onChange={(event) => setReopeningReason(event.target.value)} placeholder="Motivo de la reapertura" className="min-w-64 flex-1 rounded-lg border bg-white p-3"/><button onClick={reopen} disabled={!reopeningReason.trim()} className="rounded-lg bg-amber-700 px-5 py-2 font-medium text-white disabled:opacity-50">Reabrir caja de hoy</button></div></Card>}
     {active && <><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6"><Metric label="Monto inicial" value={money(active.opening_cash_amount)} /><Metric label="Monto por órdenes" value={money(orderIncome)} /><Metric label="Otros ingresos" value={money(otherIncome)} /><Metric label="Suma total" value={money(totalSum)} /><Metric label="Monto egresos" value={money(totalExpenses)} /><Metric label="Saldo" value={money(balance)} /></div>
       <Detail title="Ingresos por órdenes" empty="Aún no hay pagos de órdenes en esta caja." rows={paymentRows} />
       <Detail title="Ingresos extra" empty="No hay ingresos extra." rows={extraIncome.map(toMovementRow)} />
