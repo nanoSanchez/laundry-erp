@@ -7,6 +7,8 @@ import { useGarmentTypes } from "@/features/prendas/hooks/useGarmentTypes";
 
 import { useEditReceivedOrder } from "../hooks/useOrderMutations";
 import type { OrderDetail } from "../hooks/useOrder";
+import { useCreatePayment } from "../hooks/usePaymentMutations";
+import type { PaymentMethod } from "../services/payment.service";
 
 interface DraftItem {
   id: string;
@@ -19,6 +21,7 @@ interface DraftItem {
 interface Props {
   open: boolean;
   order: OrderDetail;
+  paidAmount: number;
   onClose: () => void;
 }
 
@@ -42,7 +45,7 @@ function makeDrafts(order: OrderDetail): DraftItem[] {
   }));
 }
 
-export default function OrderEditModal({ open, order, onClose }: Props) {
+export default function OrderEditModal({ open, order, paidAmount, onClose }: Props) {
   const delivery = dateAndTime(order.estimated_delivery_at);
   const [clientId, setClientId] = useState(order.client_id);
   const [clientName, setClientName] = useState(order.client?.name ?? "Cliente seleccionado");
@@ -51,9 +54,13 @@ export default function OrderEditModal({ open, order, onClose }: Props) {
   const [observations, setObservations] = useState(order.observations ?? "");
   const [discount, setDiscount] = useState(Number(order.discount).toFixed(2));
   const [items, setItems] = useState<DraftItem[]>(() => makeDrafts(order));
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+  const [paymentReference, setPaymentReference] = useState("");
   const [formError, setFormError] = useState("");
   const { data: garmentTypes = [], isLoading: garmentsLoading } = useGarmentTypes();
   const editMutation = useEditReceivedOrder();
+  const createPaymentMutation = useCreatePayment();
 
   useEffect(() => {
     if (!open) return;
@@ -65,6 +72,9 @@ export default function OrderEditModal({ open, order, onClose }: Props) {
     setObservations(order.observations ?? "");
     setDiscount(Number(order.discount).toFixed(2));
     setItems(makeDrafts(order));
+    setPaymentAmount("");
+    setPaymentMethod("cash");
+    setPaymentReference("");
     setFormError("");
   }, [open, order]);
 
@@ -74,6 +84,7 @@ export default function OrderEditModal({ open, order, onClose }: Props) {
   );
   const discountAmount = Number(discount) || 0;
   const total = Math.max(0, subtotal - discountAmount);
+  const pendingBalance = Math.max(0, total - paidAmount);
   const sortedGarments = useMemo(() => [...garmentTypes].sort((a, b) => a.name.localeCompare(b.name, "es")), [garmentTypes]);
 
   function updateItem(id: string, changes: Partial<DraftItem>) {
@@ -105,6 +116,11 @@ export default function OrderEditModal({ open, order, onClose }: Props) {
       setFormError("El descuento no es válido.");
       return;
     }
+    const accountPayment = Number(paymentAmount) || 0;
+    if (!Number.isFinite(accountPayment) || accountPayment < 0 || accountPayment > pendingBalance) {
+      setFormError(`El pago a cuenta debe ser entre Bs 0.00 y Bs ${pendingBalance.toFixed(2)}.`);
+      return;
+    }
 
     const normalizedItems = items.map((item) => {
       const quantity = Number(item.quantity);
@@ -131,6 +147,15 @@ export default function OrderEditModal({ open, order, onClose }: Props) {
         discount: discountAmount,
         items: normalizedItems,
       });
+      if (accountPayment > 0) {
+        await createPaymentMutation.mutateAsync({
+          order_id: order.id,
+          amount: accountPayment,
+          payment_method: paymentMethod,
+          reference: paymentReference.trim() || null,
+          notes: "Pago a cuenta registrado durante la edición de la orden.",
+        });
+      }
       onClose();
     } catch (error) {
       const detail = typeof error === "object" && error !== null && "message" in error && typeof error.message === "string"
@@ -154,7 +179,7 @@ export default function OrderEditModal({ open, order, onClose }: Props) {
         <section className="grid gap-4 md:grid-cols-3">
           <div><label className="mb-1 block text-sm font-medium">Fecha de entrega</label><input type="date" value={deliveryDate} onChange={(event) => setDeliveryDate(event.target.value)} className="w-full rounded-lg border p-3" /></div>
           <div><label className="mb-1 block text-sm font-medium">Hora de entrega</label><input type="time" value={deliveryTime} onChange={(event) => setDeliveryTime(event.target.value)} className="w-full rounded-lg border p-3" /></div>
-          <div><label className="mb-1 block text-sm font-medium">Descuento</label><input type="number" min="0" step="0.01" value={discount} onChange={(event) => setDiscount(event.target.value)} className="w-full rounded-lg border p-3" /></div>
+          <div><label className="mb-1 block text-sm font-medium">Descuento (Bs, opcional)</label><input type="number" min="0" step="0.01" value={discount} onChange={(event) => setDiscount(event.target.value)} className="w-full rounded-lg border p-3" /><p className="mt-1 text-xs text-slate-500">Reduce el total de la orden; no es un pago.</p></div>
           <div className="md:col-span-3"><label className="mb-1 block text-sm font-medium">Observaciones de la orden</label><textarea rows={2} value={observations} onChange={(event) => setObservations(event.target.value)} className="w-full rounded-lg border p-3" /></div>
         </section>
 
@@ -171,9 +196,19 @@ export default function OrderEditModal({ open, order, onClose }: Props) {
           ))}</div>}
         </section>
 
+        <section className="rounded-lg border border-green-200 bg-green-50 p-4">
+          <h3 className="font-semibold text-green-950">Pago a cuenta <span className="font-normal">(opcional)</span></h3>
+          <p className="mt-1 text-sm text-green-800">Se registrará al guardar y quedará asociado a la caja abierta de la sucursal. Saldo disponible: Bs {pendingBalance.toFixed(2)}.</p>
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            <div><label className="mb-1 block text-sm font-medium">Monto</label><input type="number" min="0.01" max={pendingBalance} step="0.01" value={paymentAmount} onChange={(event) => setPaymentAmount(event.target.value)} placeholder="0.00" className="w-full rounded-lg border bg-white p-3" /></div>
+            <div><label className="mb-1 block text-sm font-medium">Forma de pago</label><select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)} className="w-full rounded-lg border bg-white p-3"><option value="cash">Efectivo</option><option value="qr">QR</option><option value="transfer">Transferencia</option><option value="card">Tarjeta</option></select></div>
+            <div><label className="mb-1 block text-sm font-medium">Referencia <span className="font-normal text-slate-500">(opcional)</span></label><input value={paymentReference} onChange={(event) => setPaymentReference(event.target.value)} placeholder="N.º de operación" className="w-full rounded-lg border bg-white p-3" /></div>
+          </div>
+        </section>
+
         <div className="rounded-lg bg-slate-100 p-4 text-right"><p className="text-sm text-slate-600">Subtotal: Bs {subtotal.toFixed(2)} · Descuento: Bs {discountAmount.toFixed(2)}</p><p className="text-xl font-bold">Total: Bs {total.toFixed(2)}</p></div>
         {formError && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{formError}</p>}
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" onClick={onClose} className="rounded-lg border px-5 py-3 font-medium">Cancelar</button><button type="button" onClick={save} disabled={editMutation.isPending || garmentsLoading} className="rounded-lg bg-blue-600 px-5 py-3 font-medium text-white disabled:opacity-50">{editMutation.isPending ? "Guardando..." : "Guardar cambios"}</button></div>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" onClick={onClose} className="rounded-lg border px-5 py-3 font-medium">Cancelar</button><button type="button" onClick={save} disabled={editMutation.isPending || createPaymentMutation.isPending || garmentsLoading} className="rounded-lg bg-blue-600 px-5 py-3 font-medium text-white disabled:opacity-50">{editMutation.isPending || createPaymentMutation.isPending ? "Guardando..." : "Guardar cambios"}</button></div>
       </div>
     </Modal>
   );

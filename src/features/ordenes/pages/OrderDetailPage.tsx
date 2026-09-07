@@ -886,7 +886,7 @@ export default function OrderDetailPage() {
       </div>
 
       <OrderReceipt order={order} paidAmount={paidAmount} />
-      <OrderEditModal open={isEditOpen} order={order} onClose={() => setIsEditOpen(false)} />
+      <OrderEditModal open={isEditOpen} order={order} paidAmount={paidAmount} onClose={() => setIsEditOpen(false)} />
     </section>
   );
 }
