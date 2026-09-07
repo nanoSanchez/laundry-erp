@@ -62,9 +62,12 @@ export default function ReceptionPage() {
 
   const total = useMemo(() => {
     const totalInCents = items.reduce((sum, item) => {
+      const storedSubtotal = Number(item.subtotal);
       const quantity = Number(item.quantity);
       const unitPrice = Number(item.unit_price);
-      const lineTotal = Number.isFinite(quantity) && Number.isFinite(unitPrice) ? quantity * unitPrice : 0;
+      const lineTotal = Number.isFinite(storedSubtotal) && storedSubtotal > 0
+        ? storedSubtotal
+        : (Number.isFinite(quantity) && Number.isFinite(unitPrice) ? quantity * unitPrice : 0);
       return sum + Math.round(lineTotal * 100);
     }, 0);
 
@@ -85,7 +88,19 @@ export default function ReceptionPage() {
   }, [cashReadiness, navigate]);
 
   function handleAddItem(item: OrderItem) {
-    setItems((current) => [...current, item]);
+    const quantity = Number(item.quantity);
+    const enteredSubtotal = Number(item.subtotal);
+    const unitPrice = Number(item.unit_price);
+    const lineTotal = Number.isFinite(enteredSubtotal) && enteredSubtotal > 0
+      ? enteredSubtotal
+      : (Number.isFinite(quantity) && Number.isFinite(unitPrice) ? quantity * unitPrice : 0);
+
+    setItems((current) => [...current, {
+      ...item,
+      quantity,
+      unit_price: quantity > 0 ? lineTotal / quantity : unitPrice,
+      subtotal: Math.round(lineTotal * 100) / 100,
+    }]);
   }
 
   function handleRemoveItem(index: number) {
