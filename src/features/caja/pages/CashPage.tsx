@@ -58,4 +58,20 @@ export default function CashPage() {
 function Metric({ label, value }: { label: string; value: string }) { return <Card><p className="text-sm text-slate-500">{label}</p><p className="mt-1 text-2xl font-bold">{value}</p></Card>; }
 function toMovementRow(item: CashMovement): DetailRow { return { label: `${item.reason} · ${labels[item.payment_method]}`, date: item.created_at, amount: item.amount }; }
 function Detail({ title, rows, empty, negative = false }: { title: string; rows: DetailRow[]; empty: string; negative?: boolean }) { return <Card className="overflow-hidden p-0"><div className="border-b bg-slate-50 p-4"><h2 className="font-semibold">{title}</h2></div>{rows.length === 0 ? <p className="p-5 text-sm text-slate-500">{empty}</p> : <table className="min-w-full"><thead className="bg-slate-50 text-sm"><tr><th className="p-3 text-left">Detalle</th><th className="p-3 text-left">Hora</th><th className="p-3 text-right">Monto</th></tr></thead><tbody>{rows.map((row, index) => <tr key={`${row.label}-${index}`} className="border-t"><td className="p-3">{row.label}</td><td className="p-3">{new Date(row.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</td><td className={`p-3 text-right font-medium ${negative ? "text-red-700" : "text-green-700"}`}>{negative ? "-" : "+"}{money(row.amount)}</td></tr>)}</tbody></table>}</Card>; }
-function getErrorMessage(error: unknown, fallback: string) { return typeof error === "object" && error !== null && "message" in error && typeof error.message === "string" ? error.message : fallback; }
+function getErrorMessage(error: unknown, fallback: string) {
+  console.error("Error de reapertura de caja:", error);
+  if (typeof error === "string" && error.trim()) return error;
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "object" && error !== null) {
+    const details = error as Record<string, unknown>;
+    const message = [details.message, details.details, details.hint, details.code]
+      .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+      .join(" · ");
+    if (message) return message;
+    try {
+      const serialized = JSON.stringify(error);
+      if (serialized && serialized !== "{}") return serialized;
+    } catch { /* Se muestra el mensaje estándar si el objeto no se puede serializar. */ }
+  }
+  return fallback;
+}
