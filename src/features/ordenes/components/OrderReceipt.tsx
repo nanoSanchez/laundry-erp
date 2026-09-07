@@ -72,7 +72,10 @@ export default function OrderReceipt({ order, paidAmount }: OrderReceiptProps) {
             <tr key={item.id}>
               <td>
                 {item.garment_type?.name ?? "Prenda no disponible"}
-                {item.observations && <small>{item.observations}</small>}
+                <small>
+                  <strong>Detalle: </strong>
+                  {item.observations || "Sin detalle registrado"}
+                </small>
               </td>
               <td>{item.quantity}</td>
               <td>{formatAmount(item.unit_price)}</td>
