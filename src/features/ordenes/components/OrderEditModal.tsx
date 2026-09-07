@@ -52,7 +52,6 @@ export default function OrderEditModal({ open, order, paidAmount, onClose }: Pro
   const [deliveryDate, setDeliveryDate] = useState(delivery.date);
   const [deliveryTime, setDeliveryTime] = useState(delivery.time);
   const [observations, setObservations] = useState(order.observations ?? "");
-  const [discount, setDiscount] = useState(Number(order.discount).toFixed(2));
   const [items, setItems] = useState<DraftItem[]>(() => makeDrafts(order));
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
@@ -70,7 +69,6 @@ export default function OrderEditModal({ open, order, paidAmount, onClose }: Pro
     setDeliveryDate(resetDelivery.date);
     setDeliveryTime(resetDelivery.time);
     setObservations(order.observations ?? "");
-    setDiscount(Number(order.discount).toFixed(2));
     setItems(makeDrafts(order));
     setPaymentAmount("");
     setPaymentMethod("cash");
@@ -82,8 +80,7 @@ export default function OrderEditModal({ open, order, paidAmount, onClose }: Pro
     () => items.reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0),
     [items],
   );
-  const discountAmount = Number(discount) || 0;
-  const total = Math.max(0, subtotal - discountAmount);
+  const total = subtotal;
   const pendingBalance = Math.max(0, total - paidAmount);
   const sortedGarments = useMemo(() => [...garmentTypes].sort((a, b) => a.name.localeCompare(b.name, "es")), [garmentTypes]);
 
@@ -110,10 +107,6 @@ export default function OrderEditModal({ open, order, paidAmount, onClose }: Pro
   async function save() {
     if (!clientId || !deliveryDate || !deliveryTime || items.length === 0) {
       setFormError("Seleccione un cliente, fecha, hora y al menos una prenda.");
-      return;
-    }
-    if (!Number.isFinite(discountAmount) || discountAmount < 0 || discountAmount > subtotal) {
-      setFormError("El descuento no es válido.");
       return;
     }
     const accountPayment = Number(paymentAmount) || 0;
@@ -144,7 +137,7 @@ export default function OrderEditModal({ open, order, paidAmount, onClose }: Pro
         client_id: clientId,
         estimated_delivery_at: new Date(`${deliveryDate}T${deliveryTime}`).toISOString(),
         observations,
-        discount: discountAmount,
+        discount: 0,
         items: normalizedItems,
       });
       if (accountPayment > 0) {
@@ -176,11 +169,10 @@ export default function OrderEditModal({ open, order, paidAmount, onClose }: Pro
           <ClienteSearch onSelect={(client: Cliente) => { setClientId(client.id); setClientName(client.name); setFormError(""); }} />
         </section>
 
-        <section className="grid gap-4 md:grid-cols-3">
+        <section className="grid gap-4 md:grid-cols-2">
           <div><label className="mb-1 block text-sm font-medium">Fecha de entrega</label><input type="date" value={deliveryDate} onChange={(event) => setDeliveryDate(event.target.value)} className="w-full rounded-lg border p-3" /></div>
           <div><label className="mb-1 block text-sm font-medium">Hora de entrega</label><input type="time" value={deliveryTime} onChange={(event) => setDeliveryTime(event.target.value)} className="w-full rounded-lg border p-3" /></div>
-          <div><label className="mb-1 block text-sm font-medium">Descuento (Bs, opcional)</label><input type="number" min="0" step="0.01" value={discount} onChange={(event) => setDiscount(event.target.value)} className="w-full rounded-lg border p-3" /><p className="mt-1 text-xs text-slate-500">Reduce el total de la orden; no es un pago.</p></div>
-          <div className="md:col-span-3"><label className="mb-1 block text-sm font-medium">Observaciones de la orden</label><textarea rows={2} value={observations} onChange={(event) => setObservations(event.target.value)} className="w-full rounded-lg border p-3" /></div>
+          <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium">Observaciones de la orden</label><textarea rows={2} value={observations} onChange={(event) => setObservations(event.target.value)} className="w-full rounded-lg border p-3" /></div>
         </section>
 
         <section>
@@ -206,7 +198,7 @@ export default function OrderEditModal({ open, order, paidAmount, onClose }: Pro
           </div>
         </section>
 
-        <div className="rounded-lg bg-slate-100 p-4 text-right"><p className="text-sm text-slate-600">Subtotal: Bs {subtotal.toFixed(2)} · Descuento: Bs {discountAmount.toFixed(2)}</p><p className="text-xl font-bold">Total: Bs {total.toFixed(2)}</p></div>
+        <div className="rounded-lg bg-slate-100 p-4 text-right"><p className="text-sm text-slate-600">Subtotal de prendas</p><p className="text-xl font-bold">Total: Bs {total.toFixed(2)}</p></div>
         {formError && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{formError}</p>}
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" onClick={onClose} className="rounded-lg border px-5 py-3 font-medium">Cancelar</button><button type="button" onClick={save} disabled={editMutation.isPending || createPaymentMutation.isPending || garmentsLoading} className="rounded-lg bg-blue-600 px-5 py-3 font-medium text-white disabled:opacity-50">{editMutation.isPending || createPaymentMutation.isPending ? "Guardando..." : "Guardar cambios"}</button></div>
       </div>
